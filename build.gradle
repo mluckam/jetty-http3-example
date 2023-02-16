@@ -1,0 +1,62 @@
+plugins {
+    id "java"
+    id "org.springframework.boot" version "$springBootVersion"
+}
+
+apply plugin: "io.spring.dependency-management"
+
+group = "jetty.http3.example"
+
+ext["jakarta-servlet.version"] = "$jakartaServletVersion"
+
+configurations.all {
+    exclude group: "org.eclipse.jetty", module: "jetty-slf4j-impl"
+}
+
+dependencies {
+    implementation group: "org.springframework.boot", name: "spring-boot-starter-web"
+    implementation group: "org.springframework.boot", name: "spring-boot-starter-jetty"
+    /*
+     * Required by Spring Boot to enable HTTP/2 on Jetty embedded server
+     * https://docs.spring.io/spring-boot/docs/current/reference/html/howto.html#howto.webserver.configure-http2.jetty
+     */
+    implementation group: "org.eclipse.jetty.http3", name: "http3-server"
+    implementation group: "org.eclipse.jetty.http3", name: "http3-client"
+    implementation group: "org.eclipse.jetty.http3", name: "http3-http-client-transport"
+
+    testImplementation group: "org.springframework.boot", name: "spring-boot-starter-test"
+}
+
+java {
+    /*
+     * The compatibility configurations restrict the Java features that can be used for compilation
+     * (sourceCompatibility) and set the lowest Java version this application can run on
+     * (targetCompatibility)
+     * https://docs.gradle.org/current/userguide/java_plugin.html#sec:java-extension
+     */
+    sourceCompatibility = JavaLanguageVersion.of("$javaVersion")
+    targetCompatibility = JavaLanguageVersion.of("$javaVersion")
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ["-Xlint:deprecation", "-Xlint:unchecked"]
+}
+
+test {
+    /*
+     * Removes the build warning below.  Only needed if MockMaker is used
+     * OpenJDK 64-Bit Server VM warning: Sharing is only supported for boot loader classes because bootstrap classpath has been appended
+     * https://github.com/mockito/mockito/issues/2590
+     */
+    jvmArgs "-Xshare:off"
+
+    /*
+     * Sets full display of exceptions as the format to be used for logging test exceptions.
+     * https://docs.gradle.org/current/dsl/org.gradle.api.tasks.testing.logging.TestLogging.html
+     */
+    testLogging {
+        exceptionFormat = "full"
+    }
+
+    useJUnitPlatform()
+}
